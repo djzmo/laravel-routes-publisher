@@ -50,7 +50,10 @@ class RoutesPublisherCommand extends Command
      */
     public function handle()
     {
-        $exactFileContent = file_get_contents(app_path('Http/routes.php'));
+        if(!file_exists(app_path('Http/routes.php.source')))
+            copy(app_path('Http/routes.php'), app_path('Http/routes.php.source'));
+
+        $exactFileContent = file_get_contents(app_path('Http/routes.php.source'));
 
         $preparedFileContent = $this->prepareFileContent($exactFileContent);
 
@@ -76,11 +79,11 @@ class RoutesPublisherCommand extends Command
             }
         }
 
-        file_put_contents(app_path('Http/routes.php.generated'), $output);
+        file_put_contents(app_path('Http/routes.php'), $output);
 
-        file_put_contents(app_path('Http/routes.php.backup'), $preparedFileContent);
+        file_put_contents(app_path('Http/routes.php.backup'), $exactFileContent);
 
-        $this->info('Done! Generated file was published in "'.app_path('Http/routes.php.generated').'"');
+        $this->info('Done! Generated file was published in "'.app_path('Http/routes.php').'"');
 
         $this->info('Also a backup of routes.php was published in "'.app_path('Http/routes.php.backup').'"');
     }
