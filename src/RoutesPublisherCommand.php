@@ -248,7 +248,7 @@ class RoutesPublisherCommand extends Command
         $output = '';
 
         foreach ($routable->getParameters() as $parameter) {
-            if ($parameter->hasType()) {
+            if (!method_exists($parameter, 'hasType') || $parameter->hasType()) {
                 continue;
             }
 
