@@ -15,7 +15,7 @@ class RoutesPublisherCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'themsaid:publishRoutes';
+    protected $signature = 'route:publish';
 
     /**
      * The console command description.
