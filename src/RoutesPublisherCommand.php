@@ -221,20 +221,16 @@ class RoutesPublisherCommand extends Command
      */
     public function getUri(ReflectionMethod $routable, $path)
     {
-        $uri =
-            $path
-            .'/'
-            .implode('-', array_slice(explode('_', Str::snake($routable->name)), 1))
-            .'/'
-            .$this->getWildcards($routable);
+        $uri = $path . '/' . implode('-', array_slice(explode('_', Str::snake($routable->name)), 1));
+
+        if (Str::endsWith($uri, 'index'))
+            $uri = Str::replaceLast('index', '', $uri);
+
+        $uri .= '/' . $this->getWildcards($routable);
 
         $uri = str_replace('//', '/', $uri);
 
         $uri = rtrim($uri, '/');
-
-        if (Str::endsWith($uri, 'index')) {
-            $uri = Str::replaceLast('index', '', $uri);
-        }
 
         return $uri;
     }
