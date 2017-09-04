@@ -50,42 +50,51 @@ class RoutesPublisherCommand extends Command
      */
     public function handle()
     {
-        if(!file_exists(app_path('Http/routes.php.source')))
-            copy(app_path('Http/routes.php'), app_path('Http/routes.php.source'));
+        $routes = [];
+        $iterator = new \DirectoryIterator(base_path('routes'));
+        foreach ($iterator as $info)
+            if (!$info->isDir() && ends_with($info->getFilename(), '.php'))
+                $routes[] = $info->getFilename();
 
-        $exactFileContent = file_get_contents(app_path('Http/routes.php.source'));
+        foreach($routes as $route)
+        {
+            if(!file_exists(base_path('routes/' . $route . '.source')))
+                copy(base_path('routes/' . $route), base_path('routes/' . $route . '.source'));
 
-        $preparedFileContent = $this->prepareFileContent($exactFileContent);
+            $exactFileContent = file_get_contents(base_path('routes/' . $route . '.source'));
 
-        $output = '';
+            $preparedFileContent = $this->prepareFileContent($exactFileContent);
 
-        foreach (explode("\n", $preparedFileContent) as $line) {
-            $preparedLine = $this->prepareLine($line);
+            $output = '';
 
-            if (preg_match('/controller(?:[^s\(]*)\(([^,]*),([^,)]*)/', $preparedLine, $matches)) {
-                if (count($matches) != 3) {
-                    $this->error($preparedLine.' Looks weird, unable to parse it.');
+            foreach (explode("\n", $preparedFileContent) as $line) {
+                $preparedLine = $this->prepareLine($line);
+
+                if (preg_match('/controller(?:[^s\(]*)\(([^,]*),([^,)]*)/', $preparedLine, $matches)) {
+                    if (count($matches) != 3) {
+                        $this->error($preparedLine.' Looks weird, unable to parse it.');
+                    }
+
+                    preg_match('/^( *)/', $line, $spaces);
+
+                    $output .= $this->extractController(trim($matches[1], '\''), trim($matches[2], '\''), $spaces[1]);
+                } elseif (preg_match('/controllers(?:[^\(]*)\((.*)\)/', $preparedLine, $matches)) {
+                    preg_match('/^( *)/', $line, $spaces);
+
+                    $output .= $this->extractControllers($matches[1], $spaces[1]);
+                } else {
+                    $output .= $line."\n";
                 }
-
-                preg_match('/^( *)/', $line, $spaces);
-
-                $output .= $this->extractController(trim($matches[1], '\''), trim($matches[2], '\''), $spaces[1]);
-            } elseif (preg_match('/controllers(?:[^\(]*)\((.*)\)/', $preparedLine, $matches)) {
-                preg_match('/^( *)/', $line, $spaces);
-
-                $output .= $this->extractControllers($matches[1], $spaces[1]);
-            } else {
-                $output .= $line."\n";
             }
+
+            file_put_contents(base_path('routes/' . $route), $output);
+
+            file_put_contents(base_path('routes/' . $route . '.backup'), $exactFileContent);
+
+            $this->info('Done! Generated file was published in "'.base_path('routes/' . $route).'"');
+
+            $this->info('Also a backup of routes.php was published in "'.base_path('routes/' . $route . '.backup').'"');
         }
-
-        file_put_contents(app_path('Http/routes.php'), $output);
-
-        file_put_contents(app_path('Http/routes.php.backup'), $exactFileContent);
-
-        $this->info('Done! Generated file was published in "'.app_path('Http/routes.php').'"');
-
-        $this->info('Also a backup of routes.php was published in "'.app_path('Http/routes.php.backup').'"');
     }
 
     /**
